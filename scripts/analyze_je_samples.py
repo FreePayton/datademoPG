@@ -1,6 +1,7 @@
 """Analyze JE samples spreadsheet and print a quick summary."""
 from __future__ import annotations
 
+import inspect
 import pathlib
 from typing import Iterable
 
@@ -24,11 +25,18 @@ def _coerce_date_columns(df: pd.DataFrame) -> list[str]:
         series = df[column]
         if series.dtype.kind in {"M"}:
             continue
-        parsed = pd.to_datetime(series, errors="coerce")
+        parsed = _to_datetime(series)
         if parsed.notna().any():
             df[column] = parsed
             coerced.append(column)
     return coerced
+
+
+def _to_datetime(series: pd.Series) -> pd.Series:
+    kwargs = {"errors": "coerce"}
+    if "infer_datetime_format" in inspect.signature(pd.to_datetime).parameters:
+        kwargs["infer_datetime_format"] = True
+    return pd.to_datetime(series, **kwargs)
 
 
 def _build_summary(df: pd.DataFrame) -> dict[str, object]:
